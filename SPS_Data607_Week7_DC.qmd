@@ -1,0 +1,110 @@
+---
+title: "SPS_Data607_Week7_DC"
+format: html
+editor: visual
+author: "David Chen"
+---
+
+### Working with HTML and JSON
+
+Select **three books** on a single subject of your choice. At least **one book must have multiple authors**. For each book, record the **title**, **authors**, and **two to three additional attributes** of your choosing (e.g., publication year, publisher, ISBN, genre, rating).
+
+Using this information, **manually create two data files**:
+
+-   An **HTML file** containing a table with the book data (e.g., `books.html`)
+
+-   A **JSON file** representing the same data (e.g., `books.json`)
+
+Unless you are already very comfortable with these formats, you are expected to create both files **by hand** to better understand their structure.
+
+Next, write **R code** (using packages of your choice) to:
+
+1.  Load the HTML data into an R data frame
+
+2.  Load the JSON data into a separate R data frame
+
+3.  Compare the two data frames and determine whether they are identical
+
+### Deliverables
+
+-   `books.html`
+
+-   `books.json`
+
+-   R code that loads and compares both data sources
+
+Package your complete solution in a **Quarto (`.qmd`) file** and **publish it to rpubs.com**.
+
+Note: Publishing will require making your HTML and JSON files **publicly accessible on the web**.
+
+## Approach
+
+I plan to purchase 3 CISSP-related books from Amazon. I will collect detailed information about these books and organize the data in Excel. From the Excel dataset, I will generate an HTML page and export the data as a CSV file. The CSV file will then be converted into JSON format.
+
+<https://www.amazon.com/dp/1394258410>
+
+<https://www.amazon.com/dp/B0D37YPGPZ>
+
+<https://www.amazon.com/dp/1119789990>
+
+## Code base
+
+R-Package rvest, jsonlite, dplyr
+
+```{r}
+library(rvest)
+library(jsonlite)
+library(dplyr)
+```
+
+```{r}
+week7url<-"https://github.com/dyc-sps/SPS_DATA607_Week7/raw/5c0c3b23194f0ad491f745999192b63842fa298e/3books.htm"
+
+htmlpage <- read_html(week7url)
+df_html <- html_table(htmlpage,header = TRUE)  # after used identical function then add this option
+
+df_html <- df_html[[1]]
+df_html <- df_html[!apply(df_html, 1, function(x) all(is.na(x) | x == "")), ]
+```
+
+```{r}
+week7url2<-"https://raw.githubusercontent.com/dyc-sps/SPS_DATA607_Week7/5c0c3b23194f0ad491f745999192b63842fa298e/3books.json"
+df_json<-fromJSON(week7url2)
+df_json[df_json == ""] <- NA
+df_json
+
+```
+
+```{r}
+identical(df_html,df_json)
+
+```
+After reviewing the HTML output, we found that the first row should be set as the header row, and the first column needs to be cleaned to remove the extra (*\\r\\n*) characters.
+
+```{r}
+
+#library(stringr)
+df_html[[1]] <- trimws(gsub("\\r\\n ", "", df_html[[1]]))
+#df_html <- lapply(df_html, function(x) gsub("\\r\\n", "", x))
+#df_html[] <- lapply(df_html, str_replace_all, "\\r\\n", "")
+df_html[2,11] <-NA
+df_html[1,4] <-NA
+df_html[df_html == ""] <- NA
+df_html <- as.data.frame(df_html)
+df_html 
+```
+
+Change all values to text and check if the data matches exactly using the identical() function.
+
+```{r}
+library(dplyr)
+
+df_html <- df_html %>% mutate(across(everything(), as.character))
+df_json <- df_json %>% mutate(across(everything(), as.character))
+
+identical(df_html,df_json)
+```
+
+### Conclusion:
+
+After processing the HTML table, we successfully cleaned and prepared the data for analysis. The first row was converted to column headers, all columns were converted to text to ensure consistency, and unwanted line breaks (\\r \\n) were removed. Any empty cells were replaced with NA, and fully empty rows were removed. Finally, a verification using the identical() function confirmed that the cleaned data exactly matches the expected format, ensuring the table is accurate and ready for further use.
